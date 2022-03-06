@@ -1,0 +1,495 @@
+#!/system/bin/sh
+# KTSR™ by pedro (pedrozzz0 @ GitHub)
+# Credits: Uperf & QTI-mem-opt by Matt Yang.
+# If you wanna use it as part of your project, please maintain the credits to it respective's author(s).
+
+modpath="/data/adb/modules/KTSR"
+
+# Load libraries
+source "$modpath/libs/libktsr.sh"
+
+# Check for root permissions and bail if not granted
+[[ "$(id -u)" != "0" ]] && {
+	kmsg2 "No root permissions. Exiting..."
+	exit 1
+}
+
+# Clear logs & create dir first
+[[ -e "$klog" ]] && rm -rf "$klog"
+[[ ! -d "/data/media/0/KTSR" ]] && mkdir -p "/data/media/0/KTSR"
+[[ -d "/data/media/0/KTSR/" ]] && touch "$klog"
+[[ -e "$kdbg" ]] && rm -rf "$kdbg"
+clear_logs
+
+# Run FSCC (similiar to PinnerService, Mlock(Unevictable) 200~350MB)
+fscc_add_obj "$sys_frm/telephony-common.jar"
+fscc_add_obj "$sys_frm/qcnvitems.jar"
+fscc_add_obj "$sys_frm/oat"
+fscc_add_obj "$sys_frm/arm64"
+fscc_add_obj "/system/bin/surfaceflinger"
+fscc_add_obj "$sys_lib/libsurfaceflinger.so"
+fscc_add_obj "$sys_lib/libandroid_servers.so"
+fscc_add_obj "$sys_lib/libandroid_runtime.so"
+fscc_add_obj "$sys_lib/libandroidfw.so"
+fscc_add_obj "$sys_lib/libandroid.so"
+fscc_add_obj "$sys_lib/libhwui.so"
+fscc_add_obj "$sys_lib/libjpeg.so"
+fscc_add_obj "$vdr_lib/libssc.so"
+fscc_add_obj "$vdr_lib/libgsl.so"
+fscc_add_obj "$vdr_lib/sensors.ssc.so"
+fscc_add_obj "$vdr_lib/libCB.so"
+fscc_add_apex_lib "okhttp.jar"
+fscc_add_apex_lib "bouncycastle.jar"
+# Do not pin too many files on low memory devices
+[[ "$total_ram" -ge "2048" ]] && {
+	fscc_add_apk "com.android.systemui"
+	fscc_add_dex "com.android.systemui"
+}
+[[ "$total_ram" -ge "3072" ]] && {
+	fscc_add_app_home
+	fscc_add_app_ime
+}
+fscc_stop
+fscc_start
+
+# Run adjshield
+[[ ! -f "$adj_cfg" ]] && adjshield_create_default_cfg
+adjshield_stop
+adjshield_start
+rebuild_process_scan_cache
+usr_bbn_opt
+
+# Save mode to be applied automatically after reboot
+save_panel
+
+#[[ ! -f ${ktsr_cfg} ]] && ktsr_create_default_cfg
+
+stop_services
+
+[[ -d "$memcg" ]] && config_memcg
+
+[[ -d "$blkio" ]] && config_blkio
+
+cpu_clk_min
+cpu_clk_default
+
+disable_crc
+
+enable_fp_boost
+
+config_fs
+
+config_dyn_fsync
+
+disable_msm_thermal
+
+fix_dt2w
+
+config_tcp
+
+enable_usb_fast_chrg
+enable_sam_fast_chrg
+
+disable_spd_freqs
+
+config_pwr_spd
+
+disable_debug
+
+disable_migt
+
+disable_emmc_clk_sclg
+disable_ufs_clk_sclg
+ktsr_prof=$(getprop persist.king.tweaks.prof)
+while true; do
+	sleep 2
+	if "$boot_run_once"; then
+		[[ "$(getprop persist.king.tweaks.prof)" == "$ktsr_prof" ]] && continue
+	else
+		boot_run_once=true
+	fi
+	ktsr_prof=$(getprop persist.king.tweaks.prof)
+
+	case "$ktsr_prof" in
+		1)
+			ktsr_prof_id=otomatis
+			;;
+		2)
+			ktsr_prof_id=baterai
+			;;
+		3)
+			ktsr_prof_id=seimbang
+			;;
+		4)
+			ktsr_prof_id=ekstrim
+			;;
+		5)
+			ktsr_prof_id=gaming
+			;;
+		6)
+			ktsr_prof_id=latensi
+			;;
+	esac
+
+	case "${ktsr_prof}" in
+		1)
+			ktsr_prof_pt=automático
+			;;
+		2)
+			ktsr_prof_pt=bateria
+			;;
+		3)
+			ktsr_prof_pt=balanceado
+			;;
+		4)
+			ktsr_prof_pt=extremo
+			;;
+		5)
+			ktsr_prof_pt=gaming
+			;;
+		6)
+			ktsr_prof_pt=latência
+			;;
+	esac
+
+	case "$ktsr_prof" in
+		1)
+			ktsr_prof_en=automatic
+			;;
+		2)
+			ktsr_prof_en=battery
+			;;
+		3)
+			ktsr_prof_en=balanced
+			;;
+		4)
+			ktsr_prof_en=extreme
+			;;
+		5)
+			ktsr_prof_en=gaming
+			;;
+		6)
+			ktsr_prof_en=latency
+			;;
+	esac
+
+	case "$ktsr_prof" in
+		1)
+			ktsr_prof_tr=gecikme
+			;;
+		2)
+			ktsr_prof_tr=batarya
+			;;
+		3)
+			ktsr_prof_tr=dengeli
+			;;
+		4)
+			ktsr_prof_tr=aşırı
+			;;
+		5)
+			ktsr_prof_tr=oyun
+			;;
+		6)
+			ktsr_prof_tr=gecikme
+			;;
+	esac
+
+	case "$ktsr_prof" in
+		1)
+			ktsr_prof_fr=automatique
+			;;
+		2)
+			ktsr_prof_fr=batterie
+			;;
+		3)
+			ktsr_prof_fr=modéré
+			;;
+		4)
+			ktsr_prof_fr=extrême
+			;;
+		5)
+			ktsr_prof_fr=jeu
+			;;
+		6)
+			ktsr_prof_fr=latence
+			;;
+	esac
+
+	#is_pkg_on_ta
+
+	case "$ktsr_prof_en" in
+		"automatic")
+			case "$(getprop persist.sys.locale)" in
+				en*)
+					toast
+					;;
+				pt*)
+					toast_pt
+					;;
+				id-ID)
+					toast_id
+					;;
+				tr*)
+					toast_tr
+					;;
+				fr*)
+					toast_fr
+					;;
+				*)
+					toast
+					;;
+			esac
+
+			automatic
+
+			case "$(getprop persist.sys.locale)" in
+				en*)
+					toast_1
+					;;
+				pt*)
+					toast_pt_1
+					;;
+				id-ID)
+					toast_id_1
+					;;
+				tr*)
+					toast_tr_1
+					;;
+				fr*)
+					toast_fr_1
+					;;
+			esac
+			;;
+		"balanced")
+			case "$(getprop persist.sys.locale)" in
+				en*)
+					toast
+					;;
+				pt*)
+					toast_pt
+					;;
+				id-ID)
+					toast_id
+					;;
+				tr*)
+					toast_tr
+					;;
+				fr*)
+					toast_fr
+					;;
+			esac
+
+			killall kingauto >/dev/null 2>&1
+			setprop kingauto.prof null
+			balanced
+
+			case "$(getprop persist.sys.locale)" in
+				en*)
+					toast_1
+					;;
+				pt*)
+					toast_pt_1
+					;;
+				id-ID)
+					toast_id_1
+					;;
+				tr*)
+					toast_tr_1
+					;;
+				fr*)
+					toast_fr_1
+					;;
+			esac
+			;;
+		"extreme")
+			case "$(getprop persist.sys.locale)" in
+				en*)
+					toast
+					;;
+				pt*)
+					toast_pt
+					;;
+				id-ID)
+					toast_id
+					;;
+				tr*)
+					toast_tr
+					;;
+				fr*)
+					toast_fr
+					;;
+			esac
+
+			killall kingauto >/dev/null 2>&1
+			setprop kingauto.prof null
+			extreme
+
+			case "$(getprop persist.sys.locale)" in
+				en*)
+					toast_1
+					;;
+				pt*)
+					toast_pt_1
+					;;
+				id-ID)
+					toast_id_1
+					;;
+				tr*)
+					toast_tr_1
+					;;
+				fr*)
+					toast_fr_1
+					;;
+			esac
+			;;
+		"battery")
+			case "$(getprop persist.sys.locale)" in
+				en*)
+					toast
+					;;
+				pt*)
+					toast_pt
+					;;
+				id-ID)
+					toast_id
+					;;
+				tr*)
+					toast_tr
+					;;
+				fr*)
+					toast_fr
+					;;
+			esac
+
+			killall kingauto >/dev/null 2>&1
+			setprop kingauto.prof null
+			battery
+
+			case "$(getprop persist.sys.locale)" in
+				en*)
+					toast_1
+					;;
+				pt*)
+					toast_pt_1
+					;;
+				id-ID)
+					toast_id_1
+					;;
+				tr*)
+					toast_tr_1
+					;;
+				fr*)
+					toast_fr_1
+					;;
+			esac
+			;;
+		"gaming")
+			case "$(getprop persist.sys.locale)" in
+				en*)
+					toast
+					;;
+				pt*)
+					toast_pt
+					;;
+				id-ID)
+					toast_id
+					;;
+				tr*)
+					toast_tr
+					;;
+				fr*)
+					toast_fr
+					;;
+			esac
+
+			killall kingauto >/dev/null 2>&1
+			setprop kingauto.prof null
+			gaming
+
+			case "$(getprop persist.sys.locale)" in
+				en*)
+					toast_1
+					;;
+				pt*)
+					toast_pt_1
+					;;
+				id-ID)
+					toast_id_1
+					;;
+				tr*)
+					toast_tr_1
+					;;
+				fr*)
+					toast_fr_1
+					;;
+			esac
+			;;
+		"latency")
+			case "$(getprop persist.sys.locale)" in
+				en*)
+					toast
+					;;
+				pt*)
+					toast_pt
+					;;
+				id-ID)
+					toast_id
+					;;
+				tr*)
+					toast_tr
+					;;
+				fr*)
+					toast_fr
+					;;
+			esac
+
+			killall kingauto >/dev/null 2>&1
+			setprop kingauto.prof null
+			latency
+
+			case "$(getprop persist.sys.locale)" in
+				en*)
+					toast_1
+					;;
+				pt*)
+					toast_pt_1
+					;;
+				id-ID)
+					toast_id_1
+					;;
+				tr*)
+					toast_tr_1
+					;;
+				fr*)
+					toast_fr_1
+					;;
+			esac
+			#case "${pkg_on_ta}" in
+			#"true")
+			#for pkg_nm in "$(cat "${ktsr_cfg}" | awk '{print $1}' | sed -e '1,3d')"; do
+			#pkg_nm2="$(cat /proc/$(pgrep -f "${pkg_nm}")/cmdline)"
+			#prof_nm="$(grep -Eo "${pkg_nm2}" "${ktsr_cfg}" | awk '{print $2}')"
+			#done
+			#case "${prof_nm}" in
+			#"latency")
+			#setprop persist.king.tweaks.prof 6
+			#;;
+			#"gaming")
+			#setprop persist.king.tweaks.prof 5
+			#;;
+			#"extreme")
+			#setprop persist.king.tweaks.prof 4
+			#;;
+			#"balanced")
+			#setprop persist.king.tweaks.prof 3
+			#;;
+			#"battery")
+			#setprop persist.king.tweaks.prof 2
+			#;;
+			#esac
+			#;;
+			#esac
+			#;;
+			;;
+	esac
+done

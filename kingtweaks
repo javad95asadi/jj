@@ -3,10 +3,10 @@
 # Credits: Uperf & QTI-mem-opt by Matt Yang.
 # If you wanna use it as part of your project, please maintain the credits to it respective's author(s).
 
-modpath="/data/adb/modules/KTSR"
+MODPATH="/data/adb/modules/KTSR"
 
 # Load libraries
-source "$modpath/libs/libktsr.sh"
+source "${MODPATH}/libs/libktsr.sh"
 
 # Check for root permissions and bail if not granted
 [[ "$(id -u)" != "0" ]] && {
@@ -15,60 +15,65 @@ source "$modpath/libs/libktsr.sh"
 }
 
 # Clear logs & create dir first
-[[ -e "$klog" ]] && rm -rf "$klog"
+[[ -e ${KLOG} ]] && rm -rf "${KLOG}"
 [[ ! -d "/data/media/0/KTSR" ]] && mkdir -p "/data/media/0/KTSR"
-[[ -d "/data/media/0/KTSR/" ]] && touch "$klog"
-[[ -e "$kdbg" ]] && rm -rf "$kdbg"
+[[ -d "/data/media/0/KTSR" ]] && touch "${KLOG}"
+[[ -e ${KDBG} ]] && rm -rf "${KDBG}"
 clear_logs
 
 # Run FSCC (similiar to PinnerService, Mlock(Unevictable) 200~350MB)
-fscc_add_obj "$sys_frm/telephony-common.jar"
-fscc_add_obj "$sys_frm/qcnvitems.jar"
-fscc_add_obj "$sys_frm/oat"
-fscc_add_obj "$sys_frm/arm64"
+fscc_add_obj "${sys_frm}/telephony-common.jar"
+fscc_add_obj "${sys_frm}/qcnvitems.jar"
+fscc_add_obj "${sys_frm}/oat"
+fscc_add_obj "${sys_frm}/arm64"
 fscc_add_obj "/system/bin/surfaceflinger"
-fscc_add_obj "$sys_lib/libsurfaceflinger.so"
-fscc_add_obj "$sys_lib/libandroid_servers.so"
-fscc_add_obj "$sys_lib/libandroid_runtime.so"
-fscc_add_obj "$sys_lib/libandroidfw.so"
-fscc_add_obj "$sys_lib/libandroid.so"
-fscc_add_obj "$sys_lib/libhwui.so"
-fscc_add_obj "$sys_lib/libjpeg.so"
-fscc_add_obj "$vdr_lib/libssc.so"
-fscc_add_obj "$vdr_lib/libgsl.so"
-fscc_add_obj "$vdr_lib/sensors.ssc.so"
-fscc_add_obj "$vdr_lib/libCB.so"
+fscc_add_obj "${sys_lib}/libsurfaceflinger.so"
+fscc_add_obj "${sys_lib}/libandroid_servers.so"
+fscc_add_obj "${sys_lib}/libandroid_runtime.so"
+fscc_add_obj "${sys_lib}/libandroidfw.so"
+fscc_add_obj "${sys_lib}/libandroid.so"
+fscc_add_obj "${sys_lib}/libhwui.so"
+fscc_add_obj "${sys_lib}/libjpeg.so"
+fscc_add_obj "${vdr_lib}/libssc.so"
+fscc_add_obj "${vdr_lib}/libgsl.so"
+fscc_add_obj "${vdr_lib}/sensors.ssc.so"
+fscc_add_obj "${vdr_lib}/libCB.so"
 fscc_add_apex_lib "okhttp.jar"
 fscc_add_apex_lib "bouncycastle.jar"
+
 # Do not pin too many files on low memory devices
-[[ "$total_ram" -ge "2048" ]] && {
+[[ ${total_ram} -ge "2048" ]] && {
 	fscc_add_apk "com.android.systemui"
 	fscc_add_dex "com.android.systemui"
 }
-[[ "$total_ram" -ge "3072" ]] && {
-	fscc_add_app_home
-	fscc_add_app_ime
+[[ ${total_ram} -ge "4096" ]] && {
+	fscc_add_app_home "com.android.systemui"
+	fscc_add_app_ime "com.android.systemui"
 }
 fscc_stop
 fscc_start
 
 # Run adjshield
-[[ ! -f "$adj_cfg" ]] && adjshield_create_default_cfg
+[[ ! -f ${adj_cfg} ]] && adjshield_create_default_cfg
 adjshield_stop
 adjshield_start
 rebuild_process_scan_cache
-usr_bbn_opt
+cgroup_bbn_opt
 
 # Save mode to be applied automatically after reboot
 save_panel
 
 #[[ ! -f ${ktsr_cfg} ]] && ktsr_create_default_cfg
 
-stop_services
+#is_pkg_on_ta() {
+#while IFS= read -r pkg_nm; do
+#if [[ "$(cat /proc/$(pgrep -f "${pkg_nm}")/oom_score_adj)" == "0" ]]; then
+#pkg_on_ta=true
+#fi
+#done <<<"$(cat "${ktsr_cfg}" | awk '{print $1}' | sed -e '1,3d')"
+#}
 
-[[ -d "$memcg" ]] && config_memcg
-
-[[ -d "$blkio" ]] && config_blkio
+config_cpuset
 
 cpu_clk_min
 cpu_clk_default
@@ -97,20 +102,17 @@ config_pwr_spd
 disable_debug
 
 disable_migt
-
-disable_emmc_clk_sclg
-disable_ufs_clk_sclg
 ktsr_prof=$(getprop persist.king.tweaks.prof)
 while true; do
-	sleep 2
-	if "$boot_run_once"; then
-		[[ "$(getprop persist.king.tweaks.prof)" == "$ktsr_prof" ]] && continue
+	sleep 0.9
+	if "${boot_run_once}"; then
+		[[ "$(getprop persist.king.tweaks.prof)" == "${ktsr_prof}" ]] && continue
 	else
 		boot_run_once=true
 	fi
 	ktsr_prof=$(getprop persist.king.tweaks.prof)
 
-	case "$ktsr_prof" in
+	case "${ktsr_prof}" in
 		1)
 			ktsr_prof_id=otomatis
 			;;
@@ -152,7 +154,7 @@ while true; do
 			;;
 	esac
 
-	case "$ktsr_prof" in
+	case "${ktsr_prof}" in
 		1)
 			ktsr_prof_en=automatic
 			;;
@@ -173,7 +175,7 @@ while true; do
 			;;
 	esac
 
-	case "$ktsr_prof" in
+	case "${ktsr_prof}" in
 		1)
 			ktsr_prof_tr=gecikme
 			;;
@@ -194,7 +196,7 @@ while true; do
 			;;
 	esac
 
-	case "$ktsr_prof" in
+	case "${ktsr_prof}" in
 		1)
 			ktsr_prof_fr=automatique
 			;;
@@ -217,7 +219,7 @@ while true; do
 
 	#is_pkg_on_ta
 
-	case "$ktsr_prof_en" in
+	case "${ktsr_prof_en}" in
 		"automatic")
 			case "$(getprop persist.sys.locale)" in
 				en*)
@@ -465,31 +467,30 @@ while true; do
 					;;
 			esac
 			#case "${pkg_on_ta}" in
-			#"true")
-			#for pkg_nm in "$(cat "${ktsr_cfg}" | awk '{print $1}' | sed -e '1,3d')"; do
-			#pkg_nm2="$(cat /proc/$(pgrep -f "${pkg_nm}")/cmdline)"
-			#prof_nm="$(grep -Eo "${pkg_nm2}" "${ktsr_cfg}" | awk '{print $2}')"
-			#done
+			#true)
+			#while IFS= read -r pkg_nm; do
+			#pkg_nm2="$(cat /proc/$(pgrep -f "${pkg_nm}")/status | awk -F ':' '{print $2}')"
+			#prof_nm="$(grep "${pkg_nm2}" "${ktsr_cfg}" | awk '{print $2}')"
+			#done <<<"$(cat "${ktsr_cfg}" | awk '{print $1}' | sed -e '1,3d')"
 			#case "${prof_nm}" in
-			#"latency")
-			#setprop persist.king.tweaks.prof 6
+			#latency)
+			#latency
 			#;;
-			#"gaming")
-			#setprop persist.king.tweaks.prof 5
+			#gaming)
+			#gaming
 			#;;
-			#"extreme")
-			#setprop persist.king.tweaks.prof 4
+			#extreme)
+			#extreme
 			#;;
-			#"balanced")
-			#setprop persist.king.tweaks.prof 3
+			#balanced)
+			#balanced
 			#;;
-			#"battery")
-			#setprop persist.king.tweaks.prof 2
-			#;;
-			#esac
+			#battery)
+			#battery
 			#;;
 			#esac
 			#;;
+			#esac
 			;;
 	esac
 done

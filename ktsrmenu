@@ -15,7 +15,7 @@ ls /data >/dev/null 2>&1 || {
 }
 
 # Import magisk util_functions.sh
-[[ -f "/data/adb/magisk/util_functions.sh" ]] && . /data/adb/magisk/util_functions.sh || {
+[[ -f /data/adb/magisk/util_functions.sh ]] && . /data/adb/magisk/util_functions.sh || {
 	echo "[!] util_functions.sh not detected"
 	exit 1
 }
@@ -23,7 +23,7 @@ ls /data >/dev/null 2>&1 || {
 # Magisk Mod Directory
 [[ -d "/sbin/.magisk" ]] && MOUNTPATH="/sbin/.magisk/modules" || MOUNTPATH="$(find /dev -mindepth 2 -maxdepth 2 -type d -name ".magisk")/modules"
 MODDIR="$MOUNTPATH/$ID"
-[[ ! -d "$MODDIR" ]] && {
+[[ ! -d ${MODDIR} ]] && {
 	echo "[!] Module not detected"
 	exit 1
 }
@@ -32,24 +32,24 @@ MODDIR="$MOUNTPATH/$ID"
 _bb=
 
 # Load mod-util.sh
-. "$MODDIR/mod-util.sh" || exit $?
+. "${MODDIR}/mod-util.sh" || exit $?
 
 # Set Log Files
 mount -o remount,rw /cache 2>/dev/null
 mount -o rw,remount /cache 2>/dev/null
 
 # Logs should go in this file
-LOG="/data/media/0/KTSR/$ID-CLI.log"
-oldLOG="/data/media/0/KTSR/$ID-CLI-old.log"
+LOG=/data/media/0/KTSR/"${ID}"-CLI.log
+oldLOG=/data/media/0/KTSR/"${ID}"-CLI-old.log
 
 # Verbose output goes here
-VERLOG="/data/media/0/KTSR/$ID-verbose.log"
-oldVERLOG="/data/media/0/KTSR/$ID-verbose-old.log"
-stdoutLOG="/data/media/0/KTSR/$ID-CLI-STDOUT.log"
-oldstdoutLOG="/data/media/0/KTSR/$ID-CLI-STDOUT-old.log"
+VERLOG=/data/media/0/KTSR/"${ID}"-verbose.log
+oldVERLOG=/data/media/0/KTSR/"${ID}"-verbose-old.log
+stdoutLOG=/data/media/0/KTSR/"${ID}"-CLI-STDOUT.log
+oldstdoutLOG=/data/media/0/KTSR/"${ID}"-CLI-STDOUT-old.log
 
 # Start logging verbosely
-mv -f "$VERLOG" "$oldVERLOG" 2>/dev/null
+mv -f "${VERLOG}" "${oldVERLOG}" 2>/dev/null
 mv -f "$LOG" "$oldLOG" 2>/dev/null
 mv -f "$stdoutLOG" "$oldstdoutLOG" 2>/dev/null
 
@@ -57,11 +57,11 @@ mv -f "$stdoutLOG" "$oldstdoutLOG" 2>/dev/null
 
 # exec 1>$stdoutLOG
 
-set -x 2>"$VERLOG"
+set -x 2>"${VERLOG}"
 
 ktsr_prof=$(getprop persist.king.tweaks.prof)
 
-case "$ktsr_prof" in
+case "${ktsr_prof}" in
 	1) ktsr_prof_en="Automatic" ;;
 	2) ktsr_prof_en="Battery" ;;
 	3) ktsr_prof_en="Balanced" ;;
@@ -76,8 +76,8 @@ esac
 
 # Fetch the device SDK
 sdk=$(getprop ro.build.version.sdk)
-[[ "$sdk" == "" ]] && sdk=$(getprop ro.vendor.build.version.sdk)
-[[ "$sdk" == "" ]] && sdk=$(getprop ro.vndk.version)
+[[ ${sdk} == "" ]] && sdk=$(getprop ro.vendor.build.version.sdk)
+[[ ${sdk} == "" ]] && sdk=$(getprop ro.vndk.version)
 menu() {
 	clear
 	echo ""
@@ -85,7 +85,7 @@ menu() {
 	echo "${Y}* KTSR CLI *${N}"
 	echo "${Y}************${N}"
 	echo ""
-	echo "${G}Ver: 1.6.3.2-beta-r11${N}"
+	echo "${G}Ver: 1.6.2.0-beta-r10${N}"
 	echo ""
 	echo "[*] Current Profile: ${G}$ktsr_prof_en${N}"
 	echo ""
@@ -107,21 +107,21 @@ menu() {
 	echo ""
 	echo "[7] Optimize apps package"
 	echo ""
-	[[ "$low_power_mode" == "Disabled" ]] && {
+	[[ ${low_power_mode} == "Disabled" ]] && {
 		echo "[8] Enable low power mode"
 		echo ""
 	} || {
 		echo "[9] Disable low power mode"
 		echo ""
 	}
-	[[ "$data_saver" == "Disabled" ]] && {
+	[[ ${data_saver} == "Disabled" ]] && {
 		echo "[10] Enable data saver"
 		echo ""
 	} || {
 		echo "[11] Disable data saver"
 		echo ""
 	}
-	[[ "$loc_mode_pwr_saving" == "Disabled" ]] && {
+	[[ ${loc_mode_pwr_saving} == "Disabled" ]] && {
 		echo "[12] Enable power-saving location mode"
 		echo ""
 	} || {
@@ -170,7 +170,7 @@ menu() {
 	echo ""
 	echo "[28] Access our Wiki"
 	echo ""
-	[[ "$sdk" -ge "31" ]] && {
+	[[ ${sdk} -ge "31" ]] && {
 		echo "[29] Apply downscale on a app"
 		echo ""
 		echo "[30] Reset downscale from a app"
@@ -182,17 +182,11 @@ menu() {
 		echo "[32] Disable Gapps"
 		echo ""
 	}
-	echo "[33] Set renderer to OpenGL"
-	echo ""
-	echo "[34] Set renderer to Skia OpenGL"
-	echo ""
-	echo "[35] Set renderer to Skia Vulkan"
-	echo ""
 	echo "${R}[0] Exit${N}"
 	echo ""
 	echo -n "${Y}[*] Select the desired option:${N} "
 	read -r option
-	case "$option" in
+	case "${option}" in
 		"1")
 			echo "${B}Applying profile...${N}"
 			setprop persist.king.tweaks.prof "1" 2>/dev/null
@@ -236,9 +230,8 @@ menu() {
 			;;
 		"7")
 			echo "${B}Optimizing packages...${N}"
-			pm compile -a -f --compile-layouts
 			cmd package bg-dexopt-job
-			sleep 2
+			sleep 5
 			menu
 			;;
 		"8")
@@ -324,8 +317,6 @@ menu() {
 			settings put system peak_refresh_rate 60 2>/dev/null
 			settings put system user_refresh_rate 60 2>/dev/null
 			settings put global oneplus_screen_refresh_rate 1 2>/dev/null
-			settings put secure coloros_screen_refresh_rate 2 2>/dev/null
-			service call SurfaceFlinger 1035 i32 1 >/dev/null 2>&1
 			echo "${G}Done!${N}"
 			sleep 2
 			menu
@@ -335,8 +326,6 @@ menu() {
 			settings put system peak_refresh_rate 90 2>/dev/null
 			settings put system user_refresh_rate 90 2>/dev/null
 			settings put global oneplus_screen_refresh_rate 0 2>/dev/null
-			settings put secure coloros_screen_refresh_rate 1 2>/dev/null
-			service call SurfaceFlinger 1035 i32 0 >/dev/null 2>&1
 			echo "${G}Done!${N}"
 			sleep 2
 			menu
@@ -346,7 +335,6 @@ menu() {
 			settings put system peak_refresh_rate 120 2>/dev/null
 			settings put system user_refresh_rate 120 2>/dev/null
 			settings put global oneplus_screen_refresh_rate 0 2>/dev/null
-			settings put secure coloros_screen_refresh_rate 3 2>/dev/null
 			echo "${G}Done!${N}"
 			sleep 2
 			menu
@@ -356,8 +344,6 @@ menu() {
 			settings reset system peak_refresh_rate >/dev/null 2>&1
 			settings reset system user_refresh_rate >/dev/null 2>&1
 			settings reset global oneplus_screen_refresh_rate >/dev/null 2>&1
-			settings reset secure coloros_screen_refresh_rate >/dev/null 2>&1
-			service call SurfaceFlinger 1035 i32 1 >/dev/null 2>&1
 			echo "${G}Done!${N}"
 			sleep 2
 			menu
@@ -383,7 +369,7 @@ menu() {
 			am kill-all
 			sleep 3
 			while IFS= read -r pkg_nm; do
-				[[ "$pkg_nm" != "com.termux" ]] && [[ "$pkg_nm" != "jackpal.androidterm" ]] && [[ "$pkg_nm" != "yarolegovich.materialterminal" ]] && [[ "$pkg_nm" != "com.google.android.inputmethod.latin" ]] && [[ "$pkg_nm" != "com.termoneplus" ]] && [[ "$pkg_nm" != "com.pittvandewitt.viperfx" ]] && [[ "$pkg_nm" != "com.topjohnwu.magisk" ]] && [[ "$pkg_nm" != "ridmik.keyboard" ]] && [[ "$pkg_nm" != "com.maxmpz.equalizer" ]] && [[ "$pkg_nm" != "com.miui.screenrecorder" ]] && am force-stop "$pkg_nm"
+				[[ ${pkg_nm} != "com.termux" ]] && [[ ${pkg_nm} != "jackpal.androidterm" ]] && [[ ${pkg_nm} != "yarolegovich.materialterminal" ]] && [[ ${pkg_nm} != "com.google.android.inputmethod.latin" ]] && [[ ${pkg_nm} != "com.termoneplus" ]] && [[ ${pkg_nm} != "com.pittvandewitt.viperfx" ]] && [[ ${pkg_nm} != "com.topjohnwu.magisk" ]] && [[ ${pkg_nm} != "ridmik.keyboard" ]] && [[ ${pkg_nm} != "com.maxmpz.equalizer" ]] && [[ ${pkg_nm} != "com.miui.screenrecorder" ]] && am force-stop ${pkg_nm}
 			done <<<"$(pm list packages -e -3 | grep package | cut -f 2 -d ":")"
 			echo "${G}Done!${N}"
 			sleep 2
@@ -424,7 +410,7 @@ menu() {
 			echo "E.G: [com.android.camera]"
 			echo "Enter a package name:"
 			read -r pkg
-			cmd game downscale "$lvl" "$pkg" 2>/dev/null
+			cmd game downscale ${lvl} ${pkg} 2>/dev/null
 			echo "${G}Done!${N}"
 			sleep 2
 			menu
@@ -433,7 +419,7 @@ menu() {
 			echo "E.G: [com.android.camera]"
 			echo "Enter a package name:"
 			read -r pkg
-			cmd game downscale disable "$pkg" 2>/dev/null
+			cmd game downscale disable ${pkg} 2>/dev/null
 			echo "${G}Done!${N}"
 			sleep 2
 			menu
@@ -466,30 +452,6 @@ menu() {
 			sleep 2
 			menu
 			;;
-		"33")
-			echo "You may need to reboot to apply the changes"
-			sed -i 's/debug.hwui.renderer.*/debug.hwui.renderer=opengl/' "$MODDIR/system.prop"
-			sed -i 's/ro.hwui.use_vulkan.*/ro.hwui.use_vulkan=false/' "$MODDIR/system.prop"
-			echo "${G}Done!${N}"
-			sleep 2
-			menu
-			;;
-		"34")
-			echo "You may need to reboot to apply the changes"
-			sed -i 's/debug.hwui.renderer.*/debug.hwui.renderer=skiagl/' "$MODDIR/system.prop"
-			sed -i 's/ro.hwui.use_vulkan.*/ro.hwui.use_vulkan=false/' "$MODDIR/system.prop"
-			echo "${G}Done!${N}"
-			sleep 2
-			menu
-			;;
-		"35")
-			echo "You may need to reboot to apply the changes"
-			sed -i 's/debug.hwui.renderer.*/debug.hwui.renderer=skiavk/' "$MODDIR/system.prop"
-			sed -i 's/ro.hwui.use_vulkan.*/ro.hwui.use_vulkan=true/' "$MODDIR/system.prop"
-			echo "${G}Done!${N}"
-			sleep 2
-			menu
-			;;
 		"0")
 			echo "${G}Hope that see ya soon! ;)${N}"
 			;;
@@ -514,8 +476,8 @@ help_me() {
 	exit
 }
 
-while getopts ":p:f:h:" opt; do
-	case "$opt" in
+while getopts ":p:f:th:" opt; do
+	case "${opt}" in
 		p)
 			echo "${B}Applying profile...${N}"
 			setprop persist.king.tweaks.prof "$2" 2>/dev/null
@@ -541,7 +503,7 @@ while getopts ":p:f:h:" opt; do
 				am kill-all
 				sleep 3
 				while IFS= read -r pkg_nm; do
-					[[ "$pkg_nm" != "com.termux" ]] && [[ "$pkg_nm" != "jackpal.androidterm" ]] && [[ "$pkg_nm" != "yarolegovich.materialterminal" ]] && [[ "$pkg_nm" != "com.google.android.inputmethod.latin" ]] && [[ "$pkg_nm" != "com.termoneplus" ]] && [[ "$pkg_nm" != "com.pittvandewitt.viperfx" ]] && [[ "$pkg_nm" != "com.topjohnwu.magisk" ]] && [[ "$pkg_nm" != "ridmik.keyboard" ]] && [[ "$pkg_nm" != "com.maxmpz.equalizer" ]] && [[ "$pkg_nm" != "com.miui.screenrecorder" ]] && am force-stop "$pkg_nm"
+					[[ ${pkg_nm} != "com.termux" ]] && [[ ${pkg_nm} != "jackpal.androidterm" ]] && [[ ${pkg_nm} != "yarolegovich.materialterminal" ]] && [[ ${pkg_nm} != "com.google.android.inputmethod.latin" ]] && [[ ${pkg_nm} != "com.termoneplus" ]] && [[ ${pkg_nm} != "com.pittvandewitt.viperfx" ]] && [[ ${pkg_nm} != "com.topjohnwu.magisk" ]] && [[ ${pkg_nm} != "ridmik.keyboard" ]] && [[ ${pkg_nm} != "com.maxmpz.equalizer" ]] && [[ ${pkg_nm} != "com.miui.screenrecorder" ]] && am force-stop ${pkg_nm}
 				done <<<"$(pm list packages -e -3 | grep package | cut -f 2 -d ":")"
 				echo "${G}Done!${N}"
 				sleep 2
